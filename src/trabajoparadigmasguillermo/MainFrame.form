@@ -259,6 +259,9 @@
               <Color blue="ff" green="ff" red="ff" type="rgb"/>
             </Property>
           </Properties>
+          <Events>
+            <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="jCampoVeh1ActionPerformed"/>
+          </Events>
         </Component>
         <Component class="javax.swing.JTextField" name="jCampoOper1">
           <Properties>
@@ -766,6 +769,9 @@
       <Properties>
         <Property name="text" type="java.lang.String" value="Parar"/>
       </Properties>
+      <Events>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="jBotonPararActionPerformed"/>
+      </Events>
     </Component>
     <Component class="javax.swing.JButton" name="jBotonReanudar">
       <Properties>

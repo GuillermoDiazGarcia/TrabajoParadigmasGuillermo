@@ -15,21 +15,27 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /**
  *
- * @author Guillermo
+ * @author Guillermo Díaz García
  */
 public class MainFrame extends javax.swing.JFrame {
     
     private final Gasolinera gasolinera;
+    private static boolean stopFlag = false;
+    private final SimpleDateFormat formatoFecha = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     /**
-     * Creates new form MainFrame
+     * Inicializa los componentes
      */
     public MainFrame() {
         initComponents();
         gasolinera = new Gasolinera();
         initThreads();
     }
-    // <editor-fold defaultstate="collapsed" desc="Deprecated class">
+    
+    /***
+     * Clase que controla el funcionamiento de la gasolinera y que contiene los métodos y los datos que
+     * utilizan los hilos
+     */
     public class Gasolinera {
         private final Queue<String> colaEntrada = new LinkedList<>();
         private final Queue<Integer> esperandoOperario = new LinkedList<>();
@@ -45,10 +51,8 @@ public class MainFrame extends javax.swing.JFrame {
         private final Condition condSurtVehiculos6 = lock.newCondition();
         private final Condition condSurtVehiculos7 = lock.newCondition();
         private final Condition condOperarios = lock.newCondition();
-        private final SimpleDateFormat formatoFecha = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
         public Gasolinera (){
-            //this.campoCola = campoCola;
             for(int i=0;i<8;i++){
                 Surtidor surtidor = new Surtidor(i);
                 surtidores[i] = surtidor;
@@ -58,6 +62,8 @@ public class MainFrame extends javax.swing.JFrame {
         public void entrarGasolinera(String vehiculo){
             int surt = -1;
             try{
+                //while(MainFrame.checkStopFlag());
+                
                 lock.lock();
                 colaEntrada.add(vehiculo);
                 actualizarCola();
@@ -122,12 +128,16 @@ public class MainFrame extends javax.swing.JFrame {
                 //Log error here
             } finally {
                 lock.unlock();
+                
+//                while(MainFrame.checkStopFlag());
             }
         }
 
         public int operarSurtidor(int operario){
             int surt = -1;
             try{
+//                while(MainFrame.checkStopFlag());
+                
                 lock.lock();
                 surt = surtidorEsperandoOperario();
                 while(surt == -1){
@@ -167,13 +177,17 @@ public class MainFrame extends javax.swing.JFrame {
                 //Log error here
             } finally {
                 lock.unlock();
+//                while(MainFrame.checkStopFlag());
             }
             return surt;
         }
 
         public void surtidorTerminado(int surt){
             try{
+//                while(MainFrame.checkStopFlag());
+                
                 lock.lock();
+                
                 surtidores[surt].setVehiculo(null);
                 surtidores[surt].setOperario(-1);
                 surtidores[surt].setLibre(true);
@@ -226,6 +240,7 @@ public class MainFrame extends javax.swing.JFrame {
             } finally {
                 condEntrada.signalAll();
                 lock.unlock();
+//                while(MainFrame.checkStopFlag());
             }
         }
         
@@ -248,7 +263,6 @@ public class MainFrame extends javax.swing.JFrame {
             else return -1;
         }
     }
-    // </editor-fold>  
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -376,6 +390,11 @@ public class MainFrame extends javax.swing.JFrame {
 
         jCampoVeh1.setEditable(false);
         jCampoVeh1.setBackground(new java.awt.Color(255, 255, 255));
+        jCampoVeh1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jCampoVeh1ActionPerformed(evt);
+            }
+        });
 
         jCampoOper1.setEditable(false);
         jCampoOper1.setBackground(new java.awt.Color(255, 255, 255));
@@ -696,6 +715,11 @@ public class MainFrame extends javax.swing.JFrame {
         );
 
         jBotonParar.setText("Parar");
+        jBotonParar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jBotonPararActionPerformed(evt);
+            }
+        });
 
         jBotonReanudar.setText("Reanudar");
         jBotonReanudar.setMaximumSize(new java.awt.Dimension(59, 23));
@@ -777,17 +801,40 @@ public class MainFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_jCampoColaActionPerformed
 
     private void jBotonReanudarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBotonReanudarActionPerformed
-        //TODO here
+        Date now = new Date();
+        System.out.println(formatoFecha.format(now) + " - Reanudando simulación");
+        MainFrame.changeFlag(false);
     }//GEN-LAST:event_jBotonReanudarActionPerformed
 
+    private void jCampoVeh1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCampoVeh1ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jCampoVeh1ActionPerformed
+
+    private void jBotonPararActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBotonPararActionPerformed
+        Date now = new Date();
+        System.out.println(formatoFecha.format(now) + " - Pausando simulación");
+        MainFrame.changeFlag(true);
+    }//GEN-LAST:event_jBotonPararActionPerformed
+
+    /***
+     * Inicializa los hilos con los que funciona la simulación.
+     */
     private void initThreads(){
         ThreadStarter threadStarter = new ThreadStarter(gasolinera);
         threadStarter.start();
     }
     
-//    public void actualizarCola(String textoCola){
-//        jCampoCola.setText(textoCola);
-//    }
+    /***
+     * Informa de si se ha activado la flag del botón de pausa.
+     * @return boolean
+     */
+    public static boolean checkStopFlag(){
+        return stopFlag;
+    }
+    
+    private static void changeFlag(boolean nuevoEstado){
+        stopFlag = nuevoEstado;
+    }
     
     /**
      * @param args the command line arguments

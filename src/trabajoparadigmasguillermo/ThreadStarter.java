@@ -34,6 +34,7 @@ public class ThreadStarter extends Thread{
         }
         
         for(int i=0;i<2000;i++){
+            //while(MainFrame.checkStopFlag());
             Vehiculo vehiculo = new Vehiculo(i,gasolinera);
             //Log vehicle creation here
             Date now = new Date();
@@ -41,11 +42,13 @@ public class ThreadStarter extends Thread{
             vehiculo.start();
             try{
                 Thread.sleep(500+(long)rand.nextInt(5500));
+                //Thread.sleep(500+(long)rand.nextInt(500));
             }
             catch (InterruptedException ex) {
                 System.out.println("Error in sleep after creating " + vehiculo);
                 //Log error here
             }
+            //while(MainFrame.checkStopFlag());
         }
     }
 }

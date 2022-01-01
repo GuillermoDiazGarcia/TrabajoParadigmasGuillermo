@@ -50,9 +50,13 @@ public class Operario extends Thread{
             }
             else{
                 try{
+                    while(MainFrame.checkStopFlag());
+                    
                     System.out.println(nombre + " descansando " + (tiempoDescanso/1000) + " segundos");
                     //Log here
                     sleep(tiempoDescanso);
+                    
+                    while(MainFrame.checkStopFlag());
                 } catch(InterruptedException ex){
                     Date now = new Date();
                     System.out.println(formatoFecha.format(now) + " - Error with " + nombre + " sleeping");
