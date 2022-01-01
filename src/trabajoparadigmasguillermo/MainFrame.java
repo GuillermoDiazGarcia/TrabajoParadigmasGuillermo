@@ -9,9 +9,9 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.Queue;
-import java.util.Random;
-import java.util.concurrent.Semaphore;
-import javax.swing.JTextField;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  *
@@ -34,16 +34,17 @@ public class MainFrame extends javax.swing.JFrame {
         private final Queue<String> colaEntrada = new LinkedList<>();
         private final Queue<Integer> esperandoOperario = new LinkedList<>();
         private final Surtidor[] surtidores = new Surtidor[8];
-        private final Semaphore semEntrada = new Semaphore(8,true);
-        private final Semaphore semSurtVehiculos0 = new Semaphore(1);
-        private final Semaphore semSurtVehiculos1 = new Semaphore(1);
-        private final Semaphore semSurtVehiculos2 = new Semaphore(1);
-        private final Semaphore semSurtVehiculos3 = new Semaphore(1);
-        private final Semaphore semSurtVehiculos4 = new Semaphore(1);
-        private final Semaphore semSurtVehiculos5 = new Semaphore(1);
-        private final Semaphore semSurtVehiculos6 = new Semaphore(1);
-        private final Semaphore semSurtVehiculos7 = new Semaphore(1);
-        private final Semaphore semOperarios = new Semaphore(1);
+        private final Lock lock = new ReentrantLock();
+        private final Condition condEntrada = lock.newCondition();
+        private final Condition condSurtVehiculos0 = lock.newCondition();
+        private final Condition condSurtVehiculos1 = lock.newCondition();
+        private final Condition condSurtVehiculos2 = lock.newCondition();
+        private final Condition condSurtVehiculos3 = lock.newCondition();
+        private final Condition condSurtVehiculos4 = lock.newCondition();
+        private final Condition condSurtVehiculos5 = lock.newCondition();
+        private final Condition condSurtVehiculos6 = lock.newCondition();
+        private final Condition condSurtVehiculos7 = lock.newCondition();
+        private final Condition condOperarios = lock.newCondition();
         private final SimpleDateFormat formatoFecha = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
         public Gasolinera (){
@@ -57,11 +58,15 @@ public class MainFrame extends javax.swing.JFrame {
         public void entrarGasolinera(String vehiculo){
             int surt = -1;
             try{
+                lock.lock();
                 colaEntrada.add(vehiculo);
                 actualizarCola();
-
-                semEntrada.acquire();
+                
                 surt = surtidorLibre();
+                while(surt == -1){
+                    condEntrada.await();
+                    surt = surtidorLibre();
+                }
             } catch(Exception ex){
                 Date now = new Date();
                 System.out.println(formatoFecha.format(now) + " - Error awaiting " + vehiculo + " while waiting at entrance");
@@ -76,38 +81,39 @@ public class MainFrame extends javax.swing.JFrame {
                 surtidores[surt].setVehiculo(vehiculo);
                 surtidores[surt].setLibre(false);
                 esperandoOperario.add(surt);
+                condOperarios.signalAll();
                 switch(surt){
                     case 0:
                         jCampoVeh1.setText(vehiculo);
-                        semSurtVehiculos0.acquire();
+                        condSurtVehiculos0.await();
                         break;
                     case 1:
                         jCampoVeh2.setText(vehiculo);
-                        semSurtVehiculos1.acquire();
+                        condSurtVehiculos1.await();
                         break;
                     case 2:
                         jCampoVeh3.setText(vehiculo);
-                        semSurtVehiculos2.acquire();
+                        condSurtVehiculos2.await();
                         break;
                     case 3:
                         jCampoVeh4.setText(vehiculo);
-                        semSurtVehiculos3.acquire();
+                        condSurtVehiculos3.await();
                         break;
                     case 4:
                         jCampoVeh5.setText(vehiculo);
-                        semSurtVehiculos4.acquire();
+                        condSurtVehiculos4.await();
                         break;
                     case 5:
                         jCampoVeh6.setText(vehiculo);
-                        semSurtVehiculos5.acquire();
+                        condSurtVehiculos5.await();
                         break;
                     case 6:
                         jCampoVeh7.setText(vehiculo);
-                        semSurtVehiculos6.acquire();
+                        condSurtVehiculos6.await();
                         break;
                     case 7:
                         jCampoVeh8.setText(vehiculo);
-                        semSurtVehiculos7.acquire();
+                        condSurtVehiculos7.await();
                         break;
                 }
             } catch(Exception ex){
@@ -115,17 +121,17 @@ public class MainFrame extends javax.swing.JFrame {
                 System.out.println(formatoFecha.format(now) + " - Error while waiting for operator in surt " + surt);
                 //Log error here
             } finally {
-                semEntrada.release();
+                lock.unlock();
             }
         }
 
         public int operarSurtidor(int operario){
             int surt = -1;
             try{
-                semOperarios.acquire();
+                lock.lock();
                 surt = surtidorEsperandoOperario();
                 while(surt == -1){
-                    Thread.sleep(100);
+                    condOperarios.await();
                     surt = surtidorEsperandoOperario();
                 }
                 surtidores[surt].setOperario(operario);
@@ -160,14 +166,14 @@ public class MainFrame extends javax.swing.JFrame {
                 System.out.println(formatoFecha.format(now) + " - Error while operating surt " + surt);
                 //Log error here
             } finally {
-                semOperarios.release();
+                lock.unlock();
             }
             return surt;
         }
 
         public void surtidorTerminado(int surt){
             try{
-                semOperarios.acquire();
+                lock.lock();
                 surtidores[surt].setVehiculo(null);
                 surtidores[surt].setOperario(-1);
                 surtidores[surt].setLibre(true);
@@ -175,42 +181,42 @@ public class MainFrame extends javax.swing.JFrame {
                     case 0:
                         jCampoOper1.setText("");
                         jCampoVeh1.setText("");
-                        semSurtVehiculos0.release();
+                        condSurtVehiculos0.signalAll();
                         break;
                     case 1:
                         jCampoOper2.setText("");
                         jCampoVeh2.setText("");
-                        semSurtVehiculos1.release();
+                        condSurtVehiculos1.signalAll();
                         break;
                     case 2:
                         jCampoOper3.setText("");
                         jCampoVeh3.setText("");
-                        semSurtVehiculos2.release();
+                        condSurtVehiculos2.signalAll();
                         break;
                     case 3:
                         jCampoOper4.setText("");
                         jCampoVeh4.setText("");
-                        semSurtVehiculos3.release();
+                        condSurtVehiculos3.signalAll();
                         break;
                     case 4:
                         jCampoOper5.setText("");
                         jCampoVeh5.setText("");
-                        semSurtVehiculos4.release();
+                        condSurtVehiculos4.signalAll();
                         break;
                     case 5:
                         jCampoOper6.setText("");
                         jCampoVeh6.setText("");
-                        semSurtVehiculos5.release();
+                        condSurtVehiculos5.signalAll();
                         break;
                     case 6:
                         jCampoOper7.setText("");
                         jCampoVeh7.setText("");
-                        semSurtVehiculos6.release();
+                        condSurtVehiculos6.signalAll();
                         break;
                     case 7:
                         jCampoOper8.setText("");
                         jCampoVeh8.setText("");
-                        semSurtVehiculos7.release();
+                        condSurtVehiculos7.signalAll();
                         break;
                 }
             } catch (Exception ex){
@@ -218,7 +224,8 @@ public class MainFrame extends javax.swing.JFrame {
                 System.out.println(formatoFecha.format(now) + " - Error while finishing surt " + surt);
                 //Log error here
             } finally {
-                semOperarios.release();
+                condEntrada.signalAll();
+                lock.unlock();
             }
         }
         
