@@ -1,35 +1,33 @@
 package trabajoparadigmasguillermo;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
-
 /**
- *
+ * Clase hilo que representa los vehículos de la simulación
  * @author Guillermo Díaz García
  */
 public class Vehiculo  extends Thread{
     private final String nombre;
-//    private final Gasolinera gasolinera;
     private final MainFrame.Gasolinera gasolinera;
-    private final SimpleDateFormat formatoFecha = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     
-//    public Vehiculo (int num, Gasolinera gasolinera){
+    /***
+     * Constructor simple que pide la gasolinera que utilizan todos los hilos y un número para crear su nombre
+     * @param num
+     * @param gasolinera 
+     */
     public Vehiculo (int num, MainFrame.Gasolinera gasolinera){
-        this.nombre = "Vehículo"+num;
+        this.nombre = "Vehiculo"+num;
         this.gasolinera = gasolinera;
     }
     
+    /***
+     * Método run bastante simple en el que entramos a la gasolinera y luego avisamos de que hemos salido
+     */
     @Override
     public void run(){
-        int surt = -1;
+        MainFrame.log(" - " + nombre + " entrando en gasolinera");
         
-        Date now = new Date();
-        System.out.println(formatoFecha.format(now) + " - " + nombre + " entrando en gasolinera");
-        //Log here
         gasolinera.entrarGasolinera(nombre);
         
-        now = new Date();
-        System.out.println(formatoFecha.format(now) + " - " + nombre + " saliendo de gasolinera");
+        MainFrame.log(" - " + nombre + " saliendo de gasolinera");
     }
     
     @Override

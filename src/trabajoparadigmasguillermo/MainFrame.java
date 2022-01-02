@@ -5,6 +5,10 @@
  */
 package trabajoparadigmasguillermo;
 
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.LinkedList;
@@ -21,14 +25,28 @@ public class MainFrame extends javax.swing.JFrame {
     
     private final Gasolinera gasolinera;
     private static boolean stopFlag = false;
-    private final SimpleDateFormat formatoFecha = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    private static FileOutputStream fos;
+    private final Lock lock = new ReentrantLock();
+    private final Condition condStopFlag = lock.newCondition();
+//    private final SimpleDateFormat formatoFecha = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     /**
      * Inicializa los componentes
      */
     public MainFrame() {
         initComponents();
+        try{
+            //Limpia el fichero para escribir desde cero
+            fos = new FileOutputStream("evolucionGasolinera.txt",false);
+            fos.write(("").getBytes());
+            
+            //Inicializa fos de nuevo de forma que ahora cuando escriba no empiece desde el principio
+            fos = new FileOutputStream("evolucionGasolinera.txt",true);
+        } catch(IOException ex){
+        }
+        MainFrame.log(" - INICIANDO SIMULACION");
         gasolinera = new Gasolinera();
+        //Comienza la creación de los hilos, primero los 3 operarios y luego los 2000 vehículos
         initThreads();
     }
     
@@ -40,210 +58,148 @@ public class MainFrame extends javax.swing.JFrame {
         private final Queue<String> colaEntrada = new LinkedList<>();
         private final Queue<Integer> esperandoOperario = new LinkedList<>();
         private final Surtidor[] surtidores = new Surtidor[8];
-        private final Lock lock = new ReentrantLock();
         private final Condition condEntrada = lock.newCondition();
-        private final Condition condSurtVehiculos0 = lock.newCondition();
-        private final Condition condSurtVehiculos1 = lock.newCondition();
-        private final Condition condSurtVehiculos2 = lock.newCondition();
-        private final Condition condSurtVehiculos3 = lock.newCondition();
-        private final Condition condSurtVehiculos4 = lock.newCondition();
-        private final Condition condSurtVehiculos5 = lock.newCondition();
-        private final Condition condSurtVehiculos6 = lock.newCondition();
-        private final Condition condSurtVehiculos7 = lock.newCondition();
+//        private final Condition condSurtVehiculos0 = lock.newCondition();
+//        private final Condition condSurtVehiculos1 = lock.newCondition();
+//        private final Condition condSurtVehiculos2 = lock.newCondition();
+//        private final Condition condSurtVehiculos3 = lock.newCondition();
+//        private final Condition condSurtVehiculos4 = lock.newCondition();
+//        private final Condition condSurtVehiculos5 = lock.newCondition();
+//        private final Condition condSurtVehiculos6 = lock.newCondition();
+//        private final Condition condSurtVehiculos7 = lock.newCondition();
         private final Condition condOperarios = lock.newCondition();
 
+        /***
+         * Constructor simple que rellena el array que contiene los surtidores
+         */
         public Gasolinera (){
-            for(int i=0;i<8;i++){
-                Surtidor surtidor = new Surtidor(i);
-                surtidores[i] = surtidor;
-            }
+//            for(int i=0;i<8;i++){
+//                Surtidor surtidor = new Surtidor(i,lock.newCondition());
+//                surtidores[i] = surtidor;
+//            }
+            surtidores[0] = new Surtidor(0,lock.newCondition(),jCampoVeh1,jCampoOper1);
+            surtidores[1] = new Surtidor(1,lock.newCondition(),jCampoVeh2,jCampoOper2);
+            surtidores[2] = new Surtidor(2,lock.newCondition(),jCampoVeh3,jCampoOper3);
+            surtidores[3] = new Surtidor(3,lock.newCondition(),jCampoVeh4,jCampoOper4);
+            surtidores[4] = new Surtidor(4,lock.newCondition(),jCampoVeh5,jCampoOper5);
+            surtidores[5] = new Surtidor(5,lock.newCondition(),jCampoVeh6,jCampoOper6);
+            surtidores[6] = new Surtidor(6,lock.newCondition(),jCampoVeh7,jCampoOper7);
+            surtidores[7] = new Surtidor(7,lock.newCondition(),jCampoVeh8,jCampoOper8);
         }
 
+        /***
+         * Método que utilizan los vehículos para acceder a la gasolinera. Primero los pone en cola para acceder a los surtidores,
+         * luego cuando haya un surtidor libre los saca de la cola y los pasa al surtidor más bajo que haya libre,
+         * y cuando el operario haya terminado de servirlo lo saca de la gasolinera y avisa a la cola de entrada
+         * para que entre el siguiente.
+         * @param vehiculo 
+         */
         public void entrarGasolinera(String vehiculo){
             int surt = -1;
             try{
-                //while(MainFrame.checkStopFlag());
+                //Comprobador para el botón de pausa. Están repartidos de forma bastante liberal para asegurarse de que se pausan todos los hilos correctamente
+                checkStopFlag();
                 
                 lock.lock();
+                //Añadimos el coche a la cola de la entrada y actualizamos el campo de texto de la cola
                 colaEntrada.add(vehiculo);
                 actualizarCola();
                 
                 surt = surtidorLibre();
+                //En el momento que haya un surtidor libre dejaremos de esperar y entraremos al más bajo que esté libre
                 while(surt == -1){
                     condEntrada.await();
                     surt = surtidorLibre();
                 }
-            } catch(Exception ex){
-                Date now = new Date();
-                System.out.println(formatoFecha.format(now) + " - Error awaiting " + vehiculo + " while waiting at entrance");
-                //Log here
-            } try{
-                Date now = new Date();
-                System.out.println(formatoFecha.format(now) + " - " + vehiculo + " entrando a surtidor " + (surt+1));
-                //Log here
+                //Separamos los dos trys para mejor control de los errores
+            } catch(InterruptedException ex){
+                MainFrame.log(" - Error esperando " + vehiculo + " en la entrada");
+            }
+try{
+                MainFrame.log(" - " + vehiculo + " entrando a surtidor " + (surt+1));
                 
+                //Sacamos el vehículo de la cola y del campo de texto de la cola
                 colaEntrada.remove(vehiculo);
                 actualizarCola();
+                //Actualizamos el surtidor con el nombre del vehículo y lo marcamos como ocupado
                 surtidores[surt].setVehiculo(vehiculo);
                 surtidores[surt].setLibre(false);
+                //Señalizamos a los operarios que ahora hay un surtidor esperando a ser atendido, después esperamos
+                //mediante el condition asociado al surtidor a que el operario termine de atendernos
                 esperandoOperario.add(surt);
                 condOperarios.signalAll();
-                switch(surt){
-                    case 0:
-                        jCampoVeh1.setText(vehiculo);
-                        condSurtVehiculos0.await();
-                        break;
-                    case 1:
-                        jCampoVeh2.setText(vehiculo);
-                        condSurtVehiculos1.await();
-                        break;
-                    case 2:
-                        jCampoVeh3.setText(vehiculo);
-                        condSurtVehiculos2.await();
-                        break;
-                    case 3:
-                        jCampoVeh4.setText(vehiculo);
-                        condSurtVehiculos3.await();
-                        break;
-                    case 4:
-                        jCampoVeh5.setText(vehiculo);
-                        condSurtVehiculos4.await();
-                        break;
-                    case 5:
-                        jCampoVeh6.setText(vehiculo);
-                        condSurtVehiculos5.await();
-                        break;
-                    case 6:
-                        jCampoVeh7.setText(vehiculo);
-                        condSurtVehiculos6.await();
-                        break;
-                    case 7:
-                        jCampoVeh8.setText(vehiculo);
-                        condSurtVehiculos7.await();
-                        break;
-                }
-            } catch(Exception ex){
-                Date now = new Date();
-                System.out.println(formatoFecha.format(now) + " - Error while waiting for operator in surt " + surt);
-                //Log error here
+                surtidores[surt].getCond().await();
+            } catch(InterruptedException ex){
+                MainFrame.log(" - Error while waiting for operator in surt " + surt);
             } finally {
+                //Una vez que el operario haya terminado de llenar el depósito el vehículo sale de la gasolinera
                 lock.unlock();
-                
-//                while(MainFrame.checkStopFlag());
+                //Comprobador para el botón de pausa. Están repartidos de forma bastante liberal para asegurarse de que se pausan todos los hilos correctamente
+                checkStopFlag();
             }
         }
 
+        /***
+         * Método que utilizan los operarios para entrar a un surtidor y empezar a servirlo.
+         * @param operario
+         * @return numSurtidor
+         */
         public int operarSurtidor(int operario){
             int surt = -1;
             try{
-//                while(MainFrame.checkStopFlag());
+                //Comprobador para el botón de pausa. Están repartidos de forma bastante liberal para asegurarse de que se pausan todos los hilos correctamente
+                checkStopFlag();
                 
                 lock.lock();
                 surt = surtidorEsperandoOperario();
+                //Averiguamos qué surtidor es el que lleva más tiempo esperando a ser atendido. Si no hay ninguno esperando simplemente se hace espera no activa
+                //y se nos notifica cuando un vehículo entre a un surtidor
                 while(surt == -1){
                     condOperarios.await();
                     surt = surtidorEsperandoOperario();
                 }
+                //Actualizamos el surtidor al que hemos entrado como que lo estamos atendiendo
                 surtidores[surt].setOperario(operario);
-                switch(surt){
-                    case 0:
-                        jCampoOper1.setText("Operario" + operario);
-                        break;
-                    case 1:
-                        jCampoOper2.setText("Operario" + operario);
-                        break;
-                    case 2:
-                        jCampoOper3.setText("Operario" + operario);
-                        break;
-                    case 3:
-                        jCampoOper4.setText("Operario" + operario);
-                        break;
-                    case 4:
-                        jCampoOper5.setText("Operario" + operario);
-                        break;
-                    case 5:
-                        jCampoOper6.setText("Operario" + operario);
-                        break;
-                    case 6:
-                        jCampoOper7.setText("Operario" + operario);
-                        break;
-                    case 7:
-                        jCampoOper8.setText("Operario" + operario);
-                        break;
-                }
             } catch(Exception ex){
-                Date now = new Date();
-                System.out.println(formatoFecha.format(now) + " - Error while operating surt " + surt);
-                //Log error here
+                MainFrame.log(" - Error while operating surt " + surt);
             } finally {
                 lock.unlock();
-//                while(MainFrame.checkStopFlag());
+                //Comprobador para el botón de pausa. Están repartidos de forma bastante liberal para asegurarse de que se pausan todos los hilos correctamente
+                checkStopFlag();
             }
             return surt;
         }
 
+        /***
+         * Método al que accede el operario después de esperar lo que deba para rellenar el depósito
+         * @param surt 
+         */
         public void surtidorTerminado(int surt){
             try{
-//                while(MainFrame.checkStopFlag());
+                //Comprobador para el botón de pausa. Están repartidos de forma bastante liberal para asegurarse de que se pausan todos los hilos correctamente
+                checkStopFlag();
                 
                 lock.lock();
                 
+                //Actualizamos el surtidor para que esté vacío y notificamos al vehículo para que se vaya
                 surtidores[surt].setVehiculo(null);
                 surtidores[surt].setOperario(-1);
                 surtidores[surt].setLibre(true);
-                switch(surt){
-                    case 0:
-                        jCampoOper1.setText("");
-                        jCampoVeh1.setText("");
-                        condSurtVehiculos0.signalAll();
-                        break;
-                    case 1:
-                        jCampoOper2.setText("");
-                        jCampoVeh2.setText("");
-                        condSurtVehiculos1.signalAll();
-                        break;
-                    case 2:
-                        jCampoOper3.setText("");
-                        jCampoVeh3.setText("");
-                        condSurtVehiculos2.signalAll();
-                        break;
-                    case 3:
-                        jCampoOper4.setText("");
-                        jCampoVeh4.setText("");
-                        condSurtVehiculos3.signalAll();
-                        break;
-                    case 4:
-                        jCampoOper5.setText("");
-                        jCampoVeh5.setText("");
-                        condSurtVehiculos4.signalAll();
-                        break;
-                    case 5:
-                        jCampoOper6.setText("");
-                        jCampoVeh6.setText("");
-                        condSurtVehiculos5.signalAll();
-                        break;
-                    case 6:
-                        jCampoOper7.setText("");
-                        jCampoVeh7.setText("");
-                        condSurtVehiculos6.signalAll();
-                        break;
-                    case 7:
-                        jCampoOper8.setText("");
-                        jCampoVeh8.setText("");
-                        condSurtVehiculos7.signalAll();
-                        break;
-                }
+                surtidores[surt].getCond().signalAll();
             } catch (Exception ex){
-                Date now = new Date();
-                System.out.println(formatoFecha.format(now) + " - Error while finishing surt " + surt);
-                //Log error here
+                MainFrame.log(" - Error while finishing surt " + surt);
             } finally {
+                //Avisamos a la entrada de que puede entrar otro vehículo si estaba esperando
                 condEntrada.signalAll();
                 lock.unlock();
-//                while(MainFrame.checkStopFlag());
+                //Comprobador para el botón de pausa. Están repartidos de forma bastante liberal para asegurarse de que se pausan todos los hilos correctamente
+                checkStopFlag();
             }
         }
         
+        /***
+         * Método interno para actualizar el campo de texto de la cola
+         */
         private void actualizarCola(){
             String textoCola = "";
             for(String nav : colaEntrada){
@@ -252,15 +208,37 @@ public class MainFrame extends javax.swing.JFrame {
             jCampoCola.setText(textoCola);
         }
 
+        /***
+         * Método interno que devuelve cuál es el surtidor libre más bajo
+         * @return surt
+         */
         private int surtidorLibre(){
             for(Surtidor nav : surtidores){
                 if(nav.isLibre()) return nav.getNumero();
             }
             return -1;
         }
+        
+        /***
+         * Método interno que devuelve cuál es el surtidor que lleva más tiempo esperando un operario
+         * @return surt
+         */
         private int surtidorEsperandoOperario(){
             if(!esperandoOperario.isEmpty()) return esperandoOperario.remove();
             else return -1;
+        }
+    
+        /***
+         * Espera a que se reanude la simulación
+         */
+        public void checkStopFlag(){
+            try{
+                lock.lock();
+                while(stopFlag) condStopFlag.await();
+            } catch(InterruptedException ex){
+            }finally{
+                lock.unlock();
+            }
         }
     }
 
@@ -801,9 +779,14 @@ public class MainFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_jCampoColaActionPerformed
 
     private void jBotonReanudarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBotonReanudarActionPerformed
-        Date now = new Date();
-        System.out.println(formatoFecha.format(now) + " - Reanudando simulación");
-        MainFrame.changeFlag(false);
+        try{
+            lock.lock();
+            MainFrame.log(" - Reanudando simulacion");
+            MainFrame.changeFlag(false);
+            condStopFlag.signalAll();
+        } finally {
+            lock.unlock();
+        }
     }//GEN-LAST:event_jBotonReanudarActionPerformed
 
     private void jCampoVeh1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCampoVeh1ActionPerformed
@@ -811,11 +794,16 @@ public class MainFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_jCampoVeh1ActionPerformed
 
     private void jBotonPararActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBotonPararActionPerformed
-        Date now = new Date();
-        System.out.println(formatoFecha.format(now) + " - Pausando simulación");
-        MainFrame.changeFlag(true);
+        try{
+            lock.lock();
+            MainFrame.log(" - Pausando simulacion");
+            MainFrame.changeFlag(true);
+        } finally{
+            lock.unlock();
+        }
     }//GEN-LAST:event_jBotonPararActionPerformed
 
+    
     /***
      * Inicializa los hilos con los que funciona la simulación.
      */
@@ -825,13 +813,28 @@ public class MainFrame extends javax.swing.JFrame {
     }
     
     /***
-     * Informa de si se ha activado la flag del botón de pausa.
-     * @return boolean
+     * Escribe tanto en el output como en el fichero de log
+     * @param message 
      */
-    public static boolean checkStopFlag(){
-        return stopFlag;
+    public static void log(String message){
+        try{
+            Date now = new Date();
+            SimpleDateFormat formatoFecha = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            String string = formatoFecha.format(now) + message + "\n";
+            System.out.print(string);
+            
+            ObjectOutputStream log = new ObjectOutputStream(fos);
+            log.writeObject(string);
+//            log.close();
+        } catch(IOException ex){
+            System.out.println("Log error - " + ex.getMessage());
+        }
     }
     
+    /***
+     * Método interno que cambia la "flag" de pausa
+     * @param nuevoEstado 
+     */
     private static void changeFlag(boolean nuevoEstado){
         stopFlag = nuevoEstado;
     }
