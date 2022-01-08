@@ -1,5 +1,6 @@
-package trabajoparadigmasguillermo;
+package gasolineraProper;
 
+import java.rmi.server.UnicastRemoteObject;
 import java.util.concurrent.locks.Condition;
 import javax.swing.JTextField;
 
@@ -72,5 +73,16 @@ public class Surtidor {
     
     public JTextField getCampoOper(){
         return campoOper;
+    }
+    
+    /***
+     * Datos para el acceso remoto por RMI
+     * @return datosSurtidor
+     */
+    public String[] getDatosSurtidor(){
+        String[] datosSurtidor = new String[2];
+        datosSurtidor[0] = vehiculo;
+        datosSurtidor[1] = "Operario" + operario;
+        return datosSurtidor;
     }
 }

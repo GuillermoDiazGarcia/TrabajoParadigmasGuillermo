@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package trabajoparadigmasguillermo;
+package gasolineraProper;
 
 import java.util.Random;
 
@@ -33,6 +33,9 @@ public class ThreadStarter extends Thread{
      */
     @Override
     public void run(){
+        //Creamos el servidor
+        Servidor servidor = new Servidor(gasolinera);
+        servidor.start();
         //Creamos los 3 operarios
         for(int i=0;i<3;i++){
             Operario operario = new Operario(i, gasolinera, 5, rand);

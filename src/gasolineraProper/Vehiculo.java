@@ -1,4 +1,4 @@
-package trabajoparadigmasguillermo;
+package gasolineraProper;
 
 /**
  * Clase hilo que representa los vehículos de la simulación

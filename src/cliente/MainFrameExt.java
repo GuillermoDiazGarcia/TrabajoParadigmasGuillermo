@@ -3,242 +3,88 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package trabajoparadigmasguillermo;
+package cliente;
 
-import java.io.FileNotFoundException;
+import gasolineraProper.MainFrame;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.LinkedList;
-import java.util.Queue;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  *
  * @author Guillermo Díaz García
  */
-public class MainFrame extends javax.swing.JFrame {
+public class MainFrameExt extends javax.swing.JFrame {
     
-    private final Gasolinera gasolinera;
-    private static boolean stopFlag = false;
+    private final MainFrameExt.GasolineraExt gasolinera;
     private static FileOutputStream fos;
-    private final Lock lock = new ReentrantLock();
-    private final Condition condStopFlag = lock.newCondition();
 //    private final SimpleDateFormat formatoFecha = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     /**
      * Inicializa los componentes
      */
-    public MainFrame() {
+    public MainFrameExt() {
         initComponents();
         try{
             //Limpia el fichero para escribir desde cero
-            fos = new FileOutputStream("evolucionGasolinera.txt",false);
+            fos = new FileOutputStream("evolucionGasolineraExt.txt",false);
             fos.write(("").getBytes());
             
             //Inicializa fos de nuevo de forma que ahora cuando escriba no empiece desde el principio
-            fos = new FileOutputStream("evolucionGasolinera.txt",true);
+            fos = new FileOutputStream("evolucionGasolineraExt.txt",true);
         } catch(IOException ex){
         }
         MainFrame.log(" - INICIANDO SIMULACION");
-        gasolinera = new Gasolinera();
+        gasolinera = new MainFrameExt.GasolineraExt();
         //Comienza la creación de los hilos, primero los 3 operarios y luego los 2000 vehículos
-        initThreads();
+        ClienteGasolineraExt cliente = new ClienteGasolineraExt(gasolinera);
+        cliente.start();
+    }
+    
+    public class GasolineraExt{
+        public void actualizarVehiculos(String[] vehiculos){
+            jCampoVeh1.setText(vehiculos[0]);
+            jCampoVeh2.setText(vehiculos[1]);
+            jCampoVeh3.setText(vehiculos[2]);
+            jCampoVeh4.setText(vehiculos[3]);
+            jCampoVeh5.setText(vehiculos[4]);
+            jCampoVeh6.setText(vehiculos[5]);
+            jCampoVeh7.setText(vehiculos[6]);
+            jCampoVeh8.setText(vehiculos[7]);
+        }
+        public void actualizarOperarios(String[] operarios){
+            jCampoOper1.setText(operarios[0]);
+            jCampoOper2.setText(operarios[1]);
+            jCampoOper3.setText(operarios[2]);
+            jCampoOper4.setText(operarios[3]);
+            jCampoOper5.setText(operarios[4]);
+            jCampoOper6.setText(operarios[5]);
+            jCampoOper7.setText(operarios[6]);
+            jCampoOper8.setText(operarios[7]);
+        }
+        public void actualizarCola(String cola){
+            jCampoCola.setText(cola);
+        }
     }
     
     /***
-     * Clase que controla el funcionamiento de la gasolinera y que contiene los métodos y los datos que
-     * utilizan los hilos
+     * Escribe tanto en el output como en el fichero de log
+     * @param message 
      */
-    public class Gasolinera {
-        private final Queue<String> colaEntrada = new LinkedList<>();
-        private final Queue<Integer> esperandoOperario = new LinkedList<>();
-        private final Surtidor[] surtidores = new Surtidor[8];
-        private final Condition condEntrada = lock.newCondition();
-//        private final Condition condSurtVehiculos0 = lock.newCondition();
-//        private final Condition condSurtVehiculos1 = lock.newCondition();
-//        private final Condition condSurtVehiculos2 = lock.newCondition();
-//        private final Condition condSurtVehiculos3 = lock.newCondition();
-//        private final Condition condSurtVehiculos4 = lock.newCondition();
-//        private final Condition condSurtVehiculos5 = lock.newCondition();
-//        private final Condition condSurtVehiculos6 = lock.newCondition();
-//        private final Condition condSurtVehiculos7 = lock.newCondition();
-        private final Condition condOperarios = lock.newCondition();
-
-        /***
-         * Constructor simple que rellena el array que contiene los surtidores
-         */
-        public Gasolinera (){
-//            for(int i=0;i<8;i++){
-//                Surtidor surtidor = new Surtidor(i,lock.newCondition());
-//                surtidores[i] = surtidor;
-//            }
-            surtidores[0] = new Surtidor(0,lock.newCondition(),jCampoVeh1,jCampoOper1);
-            surtidores[1] = new Surtidor(1,lock.newCondition(),jCampoVeh2,jCampoOper2);
-            surtidores[2] = new Surtidor(2,lock.newCondition(),jCampoVeh3,jCampoOper3);
-            surtidores[3] = new Surtidor(3,lock.newCondition(),jCampoVeh4,jCampoOper4);
-            surtidores[4] = new Surtidor(4,lock.newCondition(),jCampoVeh5,jCampoOper5);
-            surtidores[5] = new Surtidor(5,lock.newCondition(),jCampoVeh6,jCampoOper6);
-            surtidores[6] = new Surtidor(6,lock.newCondition(),jCampoVeh7,jCampoOper7);
-            surtidores[7] = new Surtidor(7,lock.newCondition(),jCampoVeh8,jCampoOper8);
-        }
-
-        /***
-         * Método que utilizan los vehículos para acceder a la gasolinera. Primero los pone en cola para acceder a los surtidores,
-         * luego cuando haya un surtidor libre los saca de la cola y los pasa al surtidor más bajo que haya libre,
-         * y cuando el operario haya terminado de servirlo lo saca de la gasolinera y avisa a la cola de entrada
-         * para que entre el siguiente.
-         * @param vehiculo 
-         */
-        public void entrarGasolinera(String vehiculo){
-            int surt = -1;
-            try{
-                //Comprobador para el botón de pausa. Están repartidos de forma bastante liberal para asegurarse de que se pausan todos los hilos correctamente
-                checkStopFlag();
-                
-                lock.lock();
-                //Añadimos el coche a la cola de la entrada y actualizamos el campo de texto de la cola
-                colaEntrada.add(vehiculo);
-                actualizarCola();
-                
-                surt = surtidorLibre();
-                //En el momento que haya un surtidor libre dejaremos de esperar y entraremos al más bajo que esté libre
-                while(surt == -1){
-                    condEntrada.await();
-                    surt = surtidorLibre();
-                }
-                //Separamos los dos trys para mejor control de los errores
-            } catch(InterruptedException ex){
-                MainFrame.log(" - Error esperando " + vehiculo + " en la entrada");
-            }
-try{
-                MainFrame.log(" - " + vehiculo + " entrando a surtidor " + (surt+1));
-                
-                //Sacamos el vehículo de la cola y del campo de texto de la cola
-                colaEntrada.remove(vehiculo);
-                actualizarCola();
-                //Actualizamos el surtidor con el nombre del vehículo y lo marcamos como ocupado
-                surtidores[surt].setVehiculo(vehiculo);
-                surtidores[surt].setLibre(false);
-                //Señalizamos a los operarios que ahora hay un surtidor esperando a ser atendido, después esperamos
-                //mediante el condition asociado al surtidor a que el operario termine de atendernos
-                esperandoOperario.add(surt);
-                condOperarios.signalAll();
-                surtidores[surt].getCond().await();
-            } catch(InterruptedException ex){
-                MainFrame.log(" - Error while waiting for operator in surt " + surt);
-            } finally {
-                //Una vez que el operario haya terminado de llenar el depósito el vehículo sale de la gasolinera
-                lock.unlock();
-                //Comprobador para el botón de pausa. Están repartidos de forma bastante liberal para asegurarse de que se pausan todos los hilos correctamente
-                checkStopFlag();
-            }
-        }
-
-        /***
-         * Método que utilizan los operarios para entrar a un surtidor y empezar a servirlo.
-         * @param operario
-         * @return numSurtidor
-         */
-        public int operarSurtidor(int operario){
-            int surt = -1;
-            try{
-                //Comprobador para el botón de pausa. Están repartidos de forma bastante liberal para asegurarse de que se pausan todos los hilos correctamente
-                checkStopFlag();
-                
-                lock.lock();
-                surt = surtidorEsperandoOperario();
-                //Averiguamos qué surtidor es el que lleva más tiempo esperando a ser atendido. Si no hay ninguno esperando simplemente se hace espera no activa
-                //y se nos notifica cuando un vehículo entre a un surtidor
-                while(surt == -1){
-                    condOperarios.await();
-                    surt = surtidorEsperandoOperario();
-                }
-                //Actualizamos el surtidor al que hemos entrado como que lo estamos atendiendo
-                surtidores[surt].setOperario(operario);
-            } catch(Exception ex){
-                MainFrame.log(" - Error while operating surt " + surt);
-            } finally {
-                lock.unlock();
-                //Comprobador para el botón de pausa. Están repartidos de forma bastante liberal para asegurarse de que se pausan todos los hilos correctamente
-                checkStopFlag();
-            }
-            return surt;
-        }
-
-        /***
-         * Método al que accede el operario después de esperar lo que deba para rellenar el depósito
-         * @param surt 
-         */
-        public void surtidorTerminado(int surt){
-            try{
-                //Comprobador para el botón de pausa. Están repartidos de forma bastante liberal para asegurarse de que se pausan todos los hilos correctamente
-                checkStopFlag();
-                
-                lock.lock();
-                
-                //Actualizamos el surtidor para que esté vacío y notificamos al vehículo para que se vaya
-                surtidores[surt].setVehiculo(null);
-                surtidores[surt].setOperario(-1);
-                surtidores[surt].setLibre(true);
-                surtidores[surt].getCond().signalAll();
-            } catch (Exception ex){
-                MainFrame.log(" - Error while finishing surt " + surt);
-            } finally {
-                //Avisamos a la entrada de que puede entrar otro vehículo si estaba esperando
-                condEntrada.signalAll();
-                lock.unlock();
-                //Comprobador para el botón de pausa. Están repartidos de forma bastante liberal para asegurarse de que se pausan todos los hilos correctamente
-                checkStopFlag();
-            }
-        }
-        
-        /***
-         * Método interno para actualizar el campo de texto de la cola
-         */
-        private void actualizarCola(){
-            String textoCola = "";
-            for(String nav : colaEntrada){
-                textoCola += nav + ", ";
-            }
-            jCampoCola.setText(textoCola);
-        }
-
-        /***
-         * Método interno que devuelve cuál es el surtidor libre más bajo
-         * @return surt
-         */
-        private int surtidorLibre(){
-            for(Surtidor nav : surtidores){
-                if(nav.isLibre()) return nav.getNumero();
-            }
-            return -1;
-        }
-        
-        /***
-         * Método interno que devuelve cuál es el surtidor que lleva más tiempo esperando un operario
-         * @return surt
-         */
-        private int surtidorEsperandoOperario(){
-            if(!esperandoOperario.isEmpty()) return esperandoOperario.remove();
-            else return -1;
-        }
-    
-        /***
-         * Espera a que se reanude la simulación
-         */
-        public void checkStopFlag(){
-            try{
-                lock.lock();
-                while(stopFlag) condStopFlag.await();
-            } catch(InterruptedException ex){
-            }finally{
-                lock.unlock();
-            }
+    public static void log(String message){
+        try{
+            Date now = new Date();
+            SimpleDateFormat formatoFecha = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            String string = formatoFecha.format(now) + message + "\n";
+            System.out.print(string);
+            
+            ObjectOutputStream log = new ObjectOutputStream(fos);
+            log.writeObject(string);
+//            log.close();
+        } catch(IOException ex){
+            System.out.println("Log error - " + ex.getMessage());
         }
     }
 
@@ -301,13 +147,8 @@ try{
         jCampoOper4 = new javax.swing.JTextField();
         jLabelOper4 = new javax.swing.JLabel();
         jLabelSurt4 = new javax.swing.JLabel();
-        jBotonParar = new javax.swing.JToggleButton();
-        jBotonReanudar = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setLocation(new java.awt.Point(250, 400));
-        setMaximumSize(new java.awt.Dimension(809, 416));
-        setMinimumSize(new java.awt.Dimension(809, 416));
 
         jLabelCola.setText("Vehículos esperando entrar a Gasolinera:");
 
@@ -692,22 +533,6 @@ try{
                 .addContainerGap())
         );
 
-        jBotonParar.setText("Parar");
-        jBotonParar.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jBotonPararActionPerformed(evt);
-            }
-        });
-
-        jBotonReanudar.setText("Reanudar");
-        jBotonReanudar.setMaximumSize(new java.awt.Dimension(59, 23));
-        jBotonReanudar.setMinimumSize(new java.awt.Dimension(59, 23));
-        jBotonReanudar.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jBotonReanudarActionPerformed(evt);
-            }
-        });
-
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -715,6 +540,11 @@ try{
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createSequentialGroup()
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jLabelCola)
+                            .addComponent(jCampoCola, javax.swing.GroupLayout.PREFERRED_SIZE, 782, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(17, 17, 17))
                     .addGroup(layout.createSequentialGroup()
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                             .addComponent(jPanelSurt5, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
@@ -730,18 +560,8 @@ try{
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(jPanelSurt4, javax.swing.GroupLayout.DEFAULT_SIZE, 197, Short.MAX_VALUE)
-                            .addComponent(jPanelSurt8, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                    .addGroup(layout.createSequentialGroup()
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jLabelCola)
-                            .addComponent(jCampoCola, javax.swing.GroupLayout.PREFERRED_SIZE, 782, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addGroup(layout.createSequentialGroup()
-                                .addGap(268, 268, 268)
-                                .addComponent(jBotonParar, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(45, 45, 45)
-                                .addComponent(jBotonReanudar, javax.swing.GroupLayout.PREFERRED_SIZE, 99, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                        .addGap(7, 7, 7)))
-                .addContainerGap())
+                            .addComponent(jPanelSurt8, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addContainerGap())))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -764,11 +584,7 @@ try{
                             .addComponent(jPanelSurt6, javax.swing.GroupLayout.DEFAULT_SIZE, 149, Short.MAX_VALUE)
                             .addComponent(jPanelSurt5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
                     .addComponent(jPanelSurt4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(18, 18, 18)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jBotonReanudar, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jBotonParar, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap())
+                .addGap(65, 65, 65))
         );
 
         pack();
@@ -778,67 +594,10 @@ try{
         // TODO add your handling code here:
     }//GEN-LAST:event_jCampoColaActionPerformed
 
-    private void jBotonReanudarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBotonReanudarActionPerformed
-        try{
-            lock.lock();
-            MainFrame.log(" - Reanudando simulacion");
-            MainFrame.changeFlag(false);
-            condStopFlag.signalAll();
-        } finally {
-            lock.unlock();
-        }
-    }//GEN-LAST:event_jBotonReanudarActionPerformed
-
     private void jCampoVeh1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCampoVeh1ActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_jCampoVeh1ActionPerformed
 
-    private void jBotonPararActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBotonPararActionPerformed
-        try{
-            lock.lock();
-            MainFrame.log(" - Pausando simulacion");
-            MainFrame.changeFlag(true);
-        } finally{
-            lock.unlock();
-        }
-    }//GEN-LAST:event_jBotonPararActionPerformed
-
-    
-    /***
-     * Inicializa los hilos con los que funciona la simulación.
-     */
-    private void initThreads(){
-        ThreadStarter threadStarter = new ThreadStarter(gasolinera);
-        threadStarter.start();
-    }
-    
-    /***
-     * Escribe tanto en el output como en el fichero de log
-     * @param message 
-     */
-    public static void log(String message){
-        try{
-            Date now = new Date();
-            SimpleDateFormat formatoFecha = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-            String string = formatoFecha.format(now) + message + "\n";
-            System.out.print(string);
-            
-            ObjectOutputStream log = new ObjectOutputStream(fos);
-            log.writeObject(string);
-//            log.close();
-        } catch(IOException ex){
-            System.out.println("Log error - " + ex.getMessage());
-        }
-    }
-    
-    /***
-     * Método interno que cambia la "flag" de pausa
-     * @param nuevoEstado 
-     */
-    private static void changeFlag(boolean nuevoEstado){
-        stopFlag = nuevoEstado;
-    }
-    
     /**
      * @param args the command line arguments
      */
@@ -856,27 +615,25 @@ try{
                 }
             }
         } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(MainFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(MainFrameExt.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(MainFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(MainFrameExt.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(MainFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(MainFrameExt.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(MainFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(MainFrameExt.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
         //</editor-fold>
 
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                new MainFrame().setVisible(true);
+                new MainFrameExt().setVisible(true);
             }
         });
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JToggleButton jBotonParar;
-    private javax.swing.JButton jBotonReanudar;
     private javax.swing.JTextField jCampoCola;
     private javax.swing.JTextField jCampoOper1;
     private javax.swing.JTextField jCampoOper2;

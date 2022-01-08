@@ -1,4 +1,4 @@
-package trabajoparadigmasguillermo;
+package gasolineraProper;
 
 import java.util.Random;
 
