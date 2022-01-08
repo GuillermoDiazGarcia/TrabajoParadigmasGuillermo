@@ -1,13 +1,12 @@
 package gasolineraProper;
 
-import java.io.IOException;
 import java.rmi.Naming;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 
 /**
- * Esta clase Thread se ocupa de las peticiones del cliente y envía los datos de la
- * gasolinera cada 1 segundo
+ * Esta clase Thread se ocupa de las peticiones del cliente. Externaliza el objeto remoto
+ * y actualiza sus datos cada 1 segundo.
  * @author Guillermo Díaz García
  */
 public class Servidor extends Thread{
@@ -16,6 +15,10 @@ public class Servidor extends Thread{
     private String datosCola = "";
     private GasolineraExterna gasEx;
     
+    /***
+     * Constructor que crea y externaliza el objeto remoto
+     * @param gasolinera 
+     */
     public Servidor(MainFrame.Gasolinera gasolinera){
         this.gasolinera = gasolinera;
         for(int i=0;i<8;i++){
@@ -28,12 +31,16 @@ public class Servidor extends Thread{
             System.setProperty("java.rmi.server.hostname","127.0.0.1");
             Registry registry = LocateRegistry.createRegistry(4000);
             gasEx = new GasolineraExterna(datosSurtidores, datosCola);
-            Naming.rebind("//127.0.0.1/GasEx", gasEx);
+            Naming.rebind("//127.0.0.1:4000/GasEx", gasEx);
         } catch(Exception ex){
             MainFrame.log(" - Error inicializando objeto externo: " + ex.getMessage());
         }
     }
     
+    /***
+     * Método run con un bucle infinito que actualiza los datos del objeto
+     * remoto cada 1 segundo
+     */
     @Override
     public void run(){
         while(true){

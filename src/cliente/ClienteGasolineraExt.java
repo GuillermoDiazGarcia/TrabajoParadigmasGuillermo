@@ -5,6 +5,8 @@
  */
 package cliente;
 
+import interfazRMI.InterfazGasolineraExterna;
+import cliente.MainFrameExt;
 import java.rmi.Naming;
 
 /**
@@ -22,17 +24,17 @@ public class ClienteGasolineraExt extends Thread{
     public void run(){
         while(true){
             try{
+                sleep(1000);
+                
                 MainFrameExt.log(" - Actualizando datos");
                 
-                InterfazGasolineraExterna gasEx = (InterfazGasolineraExterna) Naming.lookup("//127.0.0.1/GasEx");
+                interfazRMI.InterfazGasolineraExterna gasEx = (interfazRMI.InterfazGasolineraExterna) Naming.lookup("//127.0.0.1:4000/GasEx");
                 
                 gasolinera.actualizarVehiculos(gasEx.getVehiculos());
                 gasolinera.actualizarOperarios(gasEx.getOperarios());
                 gasolinera.actualizarCola(gasEx.getCola());
-                
-                sleep(1000);
             } catch (Exception ex){
-                MainFrameExt.log(" - Error recibiendo datos");
+                MainFrameExt.log(" - Error recibiendo datos: " + ex.getMessage());
             }
         }
     }

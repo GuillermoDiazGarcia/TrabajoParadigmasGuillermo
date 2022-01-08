@@ -12,7 +12,7 @@ import java.rmi.server.UnicastRemoteObject;
  * Clase de datos para uso con RMI
  * @author Guillermo Díaz García
  */
-public class GasolineraExterna extends UnicastRemoteObject implements InterfazGasolineraExterna{
+public class GasolineraExterna extends UnicastRemoteObject implements interfazRMI.InterfazGasolineraExterna{
     private String[] vehiculos = new String[8];
     private String[] operarios = new String[8];
     private String cola;
