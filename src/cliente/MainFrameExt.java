@@ -19,7 +19,6 @@ public class MainFrameExt extends javax.swing.JFrame {
     
     private final MainFrameExt.GasolineraExt gasolinera;
     private static FileOutputStream fos;
-//    private final SimpleDateFormat formatoFecha = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     /**
      * Inicializa los componentes
@@ -37,12 +36,20 @@ public class MainFrameExt extends javax.swing.JFrame {
         }
         MainFrameExt.log(" - INICIANDO SIMULACION");
         gasolinera = new MainFrameExt.GasolineraExt();
-        //Comienza la creación de los hilos, primero los 3 operarios y luego los 2000 vehículos
+        //Crea el hilo del cliente
         ClienteGasolineraExt cliente = new ClienteGasolineraExt(gasolinera);
         cliente.start();
     }
     
+    /***
+     * CLase simple que gestiona la interfaz gráfica con los datos que recibe el cliente
+     */
     public class GasolineraExt{
+        /***
+         * Recibe un array de strings con los vehículos en los surtidores y
+         * actualiza los textos de los surtidores
+         * @param vehiculos 
+         */
         public void actualizarVehiculos(String[] vehiculos){
             jCampoVeh1.setText(vehiculos[0]);
             jCampoVeh2.setText(vehiculos[1]);
@@ -53,6 +60,11 @@ public class MainFrameExt extends javax.swing.JFrame {
             jCampoVeh7.setText(vehiculos[6]);
             jCampoVeh8.setText(vehiculos[7]);
         }
+        /***
+         * Recibe un array de strings con los operarios en los surtidores y
+         * actualiza los textos de los surtidores
+         * @param operarios 
+         */
         public void actualizarOperarios(String[] operarios){
             jCampoOper1.setText(operarios[0]);
             jCampoOper2.setText(operarios[1]);
@@ -63,6 +75,10 @@ public class MainFrameExt extends javax.swing.JFrame {
             jCampoOper7.setText(operarios[6]);
             jCampoOper8.setText(operarios[7]);
         }
+        /***
+         * Recibe el string de la cola y actualiza el texto de la misma
+         * @param cola 
+         */
         public void actualizarCola(String cola){
             jCampoCola.setText(cola);
         }

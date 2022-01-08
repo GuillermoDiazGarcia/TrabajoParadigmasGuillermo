@@ -102,7 +102,7 @@ public class MainFrame extends javax.swing.JFrame {
             } catch(InterruptedException ex){
                 MainFrame.log(" - Error esperando " + vehiculo + " en la entrada");
             }
-try{
+            try{
                 MainFrame.log(" - " + vehiculo + " entrando a surtidor " + (surt+1));
                 
                 //Sacamos el vehículo de la cola y del campo de texto de la cola
