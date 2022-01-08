@@ -59,14 +59,6 @@ public class MainFrame extends javax.swing.JFrame {
         private final Queue<Integer> esperandoOperario = new LinkedList<>();
         private final Surtidor[] surtidores = new Surtidor[8];
         private final Condition condEntrada = lock.newCondition();
-//        private final Condition condSurtVehiculos0 = lock.newCondition();
-//        private final Condition condSurtVehiculos1 = lock.newCondition();
-//        private final Condition condSurtVehiculos2 = lock.newCondition();
-//        private final Condition condSurtVehiculos3 = lock.newCondition();
-//        private final Condition condSurtVehiculos4 = lock.newCondition();
-//        private final Condition condSurtVehiculos5 = lock.newCondition();
-//        private final Condition condSurtVehiculos6 = lock.newCondition();
-//        private final Condition condSurtVehiculos7 = lock.newCondition();
         private final Condition condOperarios = lock.newCondition();
 
         /***
@@ -102,10 +94,10 @@ public class MainFrame extends javax.swing.JFrame {
                 actualizarCola();
                 
                 surt = surtidorLibre();
-                //En el momento que haya un surtidor libre dejaremos de esperar y entraremos al más bajo que esté libre
+                //En el momento que haya un surtidor libre y seamos los primeros en la cola dejaremos de esperar y entraremos al más bajo que esté libre
                 while(surt == -1){
                     condEntrada.await();
-                    surt = surtidorLibre();
+                    if(colaEntrada.peek().equals(vehiculo)) surt = surtidorLibre();
                 }
                 //Separamos los dos trys para mejor control de los errores
             } catch(InterruptedException ex){

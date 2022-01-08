@@ -47,16 +47,16 @@ public class ThreadStarter extends Thread{
         for(int i=0;i<2000;i++){
             //Comprobador para el botón de pausa. Están repartidos de forma bastante liberal para asegurarse de que se pausan todos los hilos correctamente
             gasolinera.checkStopFlag();
-            Vehiculo vehiculo = new Vehiculo(i,gasolinera);
+            Vehiculo vehiculo = new Vehiculo(i,gasolinera, rand);
             MainFrame.log(" - Creado " + vehiculo);
             vehiculo.start();
-            try{
-                Thread.sleep(500+(long)rand.nextInt(5500));
-                //Thread.sleep(500+(long)rand.nextInt(500));
-            }
-            catch (InterruptedException ex) {
-                MainFrame.log(" - Error in sleep after creating " + vehiculo);
-            }
+//            try{
+//                Thread.sleep(500+(long)rand.nextInt(5500));
+//                //Thread.sleep(500+(long)rand.nextInt(500));
+//            }
+//            catch (InterruptedException ex) {
+//                MainFrame.log(" - Error in sleep after creating " + vehiculo);
+//            }
             //Comprobador para el botón de pausa. Están repartidos de forma bastante liberal para asegurarse de que se pausan todos los hilos correctamente
             gasolinera.checkStopFlag();
         }

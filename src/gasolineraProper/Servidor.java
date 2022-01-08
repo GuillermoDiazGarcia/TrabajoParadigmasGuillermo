@@ -14,6 +14,7 @@ public class Servidor extends Thread{
     private final MainFrame.Gasolinera gasolinera;
     private String[][] datosSurtidores = new String[8][2];
     private String datosCola = "";
+    private GasolineraExterna gasEx;
     
     public Servidor(MainFrame.Gasolinera gasolinera){
         this.gasolinera = gasolinera;
@@ -26,7 +27,7 @@ public class Servidor extends Thread{
             MainFrame.log(" - Externalizado gasEx");
             System.setProperty("java.rmi.server.hostname","127.0.0.1");
             Registry registry = LocateRegistry.createRegistry(4000);
-            GasolineraExterna gasEx = new GasolineraExterna(datosSurtidores, datosCola);
+            gasEx = new GasolineraExterna(datosSurtidores, datosCola);
             Naming.rebind("//127.0.0.1/GasEx", gasEx);
         } catch(Exception ex){
             MainFrame.log(" - Error inicializando objeto externo: " + ex.getMessage());
@@ -36,8 +37,8 @@ public class Servidor extends Thread{
     @Override
     public void run(){
         while(true){
-            datosSurtidores = gasolinera.getDatosSurtidores();
-            datosCola = gasolinera.getDatosCola();
+            gasEx.setDatosSurtidores(gasolinera.getDatosSurtidores());
+            gasEx.setDatosCola(gasolinera.getDatosCola());
             try{
                 sleep(1000);
             } catch (Exception ex){

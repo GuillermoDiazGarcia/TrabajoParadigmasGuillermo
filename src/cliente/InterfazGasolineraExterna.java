@@ -12,8 +12,6 @@ import java.rmi.RemoteException;
  * @author Guillermo Díaz García
  */
 public interface InterfazGasolineraExterna {
-    String getOperario(int numOperario) throws RemoteException;
-    String getVehiculo(int numVehiculo) throws RemoteException;
     String[] getOperarios() throws RemoteException;
     String[] getVehiculos() throws RemoteException;
     String getCola() throws RemoteException;

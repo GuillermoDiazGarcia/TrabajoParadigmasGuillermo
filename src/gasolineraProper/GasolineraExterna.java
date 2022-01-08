@@ -24,20 +24,10 @@ public class GasolineraExterna extends UnicastRemoteObject implements InterfazGa
         }
         this.cola = cola;
     }
-
-    @Override
-    public String getVehiculo(int numVehiculo) throws RemoteException{
-        return this.vehiculos[numVehiculo];
-    }
     
     @Override
     public String[] getVehiculos() throws RemoteException{
         return this.vehiculos;
-    }
-
-    @Override
-    public String getOperario(int numOperario) throws RemoteException{
-        return this.operarios[numOperario];
     }
     
     @Override
@@ -48,5 +38,16 @@ public class GasolineraExterna extends UnicastRemoteObject implements InterfazGa
     @Override
     public String getCola() throws RemoteException{
         return this.cola;
+    }
+
+    public void setDatosCola(String cola) {
+        this.cola = cola;
+    }
+    
+    public void setDatosSurtidores(String[][] datosSurtidores){
+        for(int i=0;i<8;i++){
+            this.vehiculos[i] = datosSurtidores[i][0];
+            this.operarios[i] = datosSurtidores[i][1];
+        }
     }
 }
