@@ -5,7 +5,6 @@
  */
 package cliente;
 
-import interfazRMI.InterfazGasolineraExterna;
 import cliente.MainFrameExt;
 import java.rmi.Naming;
 
