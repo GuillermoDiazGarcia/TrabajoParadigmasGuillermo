@@ -73,10 +73,6 @@ public class MainFrame extends javax.swing.JFrame {
          * Constructor simple que rellena el array que contiene los surtidores
          */
         public Gasolinera (){
-//            for(int i=0;i<8;i++){
-//                Surtidor surtidor = new Surtidor(i,lock.newCondition());
-//                surtidores[i] = surtidor;
-//            }
             surtidores[0] = new Surtidor(0,lock.newCondition(),jCampoVeh1,jCampoOper1);
             surtidores[1] = new Surtidor(1,lock.newCondition(),jCampoVeh2,jCampoOper2);
             surtidores[2] = new Surtidor(2,lock.newCondition(),jCampoVeh3,jCampoOper3);

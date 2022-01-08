@@ -5,7 +5,6 @@
  */
 package cliente;
 
-import gasolineraProper.MainFrame;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
@@ -36,7 +35,7 @@ public class MainFrameExt extends javax.swing.JFrame {
             fos = new FileOutputStream("evolucionGasolineraExt.txt",true);
         } catch(IOException ex){
         }
-        MainFrame.log(" - INICIANDO SIMULACION");
+        MainFrameExt.log(" - INICIANDO SIMULACION");
         gasolinera = new MainFrameExt.GasolineraExt();
         //Comienza la creación de los hilos, primero los 3 operarios y luego los 2000 vehículos
         ClienteGasolineraExt cliente = new ClienteGasolineraExt(gasolinera);

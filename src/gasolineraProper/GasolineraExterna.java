@@ -13,11 +13,11 @@ import java.rmi.server.UnicastRemoteObject;
  * @author Guillermo Díaz García
  */
 public class GasolineraExterna extends UnicastRemoteObject implements InterfazGasolineraExterna{
-    private String[] vehiculos;
-    private String[] operarios;
+    private String[] vehiculos = new String[8];
+    private String[] operarios = new String[8];
     private String cola;
     
-    public GasolineraExterna(String[][] datosSurtidores, String cola){
+    public GasolineraExterna(String[][] datosSurtidores, String cola) throws RemoteException{
         for(int i=0;i<8;i++){
             this.vehiculos[i] = datosSurtidores[i][0];
             this.operarios[i] = datosSurtidores[i][1];

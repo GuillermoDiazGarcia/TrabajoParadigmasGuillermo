@@ -12,9 +12,6 @@ import java.rmi.Naming;
  * @author Guillermo Díaz García
  */
 public class ClienteGasolineraExt extends Thread{
-    private String[] vehiculos = new String[8];
-    private String[] operarios = new String[8];
-    private String cola = "";
     private final MainFrameExt.GasolineraExt gasolinera;
     
     public ClienteGasolineraExt(MainFrameExt.GasolineraExt gasolinera){
@@ -28,13 +25,10 @@ public class ClienteGasolineraExt extends Thread{
                 MainFrameExt.log(" - Actualizando datos");
                 
                 InterfazGasolineraExterna gasEx = (InterfazGasolineraExterna) Naming.lookup("//127.0.0.1/GasolineraExterna");
-                vehiculos = gasEx.getVehiculos();
-                operarios = gasEx.getOperarios();
-                cola = gasEx.getCola();
                 
-                gasolinera.actualizarVehiculos(vehiculos);
-                gasolinera.actualizarOperarios(operarios);
-                gasolinera.actualizarCola(cola);
+                gasolinera.actualizarVehiculos(gasEx.getVehiculos());
+                gasolinera.actualizarOperarios(gasEx.getOperarios());
+                gasolinera.actualizarCola(gasEx.getCola());
                 
                 sleep(1000);
             } catch (Exception ex){

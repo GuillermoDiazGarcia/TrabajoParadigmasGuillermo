@@ -14,19 +14,22 @@ public class Servidor extends Thread{
     private final MainFrame.Gasolinera gasolinera;
     private String[][] datosSurtidores = new String[8][2];
     private String datosCola = "";
-    private Registry registry;
     
     public Servidor(MainFrame.Gasolinera gasolinera){
         this.gasolinera = gasolinera;
         for(int i=0;i<8;i++){
-            for(int j=0;i<2;j++){
+            for(int j=0;j<2;j++){
                 this.datosSurtidores[i][j] = "";
             }
         }
         try{
-            registry = LocateRegistry.createRegistry(4000);
+            MainFrame.log(" - Externalizado gasEx");
+            System.setProperty("java.rmi.server.hostname","127.0.0.1");
+            Registry registry = LocateRegistry.createRegistry(4000);
+            GasolineraExterna gasEx = new GasolineraExterna(datosSurtidores, datosCola);
+            Naming.rebind("//127.0.0.1/GasolineraExterna", gasEx);
         } catch(Exception ex){
-            MainFrame.log(" - Error inicializando servidor");
+            MainFrame.log(" - Error inicializando objeto externo: " + ex.getMessage());
         }
     }
     
@@ -35,14 +38,10 @@ public class Servidor extends Thread{
         while(true){
             datosSurtidores = gasolinera.getDatosSurtidores();
             datosCola = gasolinera.getDatosCola();
-            GasolineraExterna gasEx = new GasolineraExterna(datosSurtidores, datosCola);
-            
             try{
-                Naming.rebind("//127.0.0.1/GasolineraExterna", gasEx);
-                MainFrame.log(" - Externalizado gasEx");
                 sleep(1000);
             } catch (Exception ex){
-                MainFrame.log(" - Error externalizando gasEx");
+                MainFrame.log(" - Error sleeping in external object");
             }
         }
     }
