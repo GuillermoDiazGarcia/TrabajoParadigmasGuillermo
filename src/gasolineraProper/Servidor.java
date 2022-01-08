@@ -27,7 +27,7 @@ public class Servidor extends Thread{
             System.setProperty("java.rmi.server.hostname","127.0.0.1");
             Registry registry = LocateRegistry.createRegistry(4000);
             GasolineraExterna gasEx = new GasolineraExterna(datosSurtidores, datosCola);
-            Naming.rebind("//127.0.0.1/GasolineraExterna", gasEx);
+            Naming.rebind("//127.0.0.1/GasEx", gasEx);
         } catch(Exception ex){
             MainFrame.log(" - Error inicializando objeto externo: " + ex.getMessage());
         }

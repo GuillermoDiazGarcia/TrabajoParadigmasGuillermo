@@ -24,7 +24,7 @@ public class ClienteGasolineraExt extends Thread{
             try{
                 MainFrameExt.log(" - Actualizando datos");
                 
-                InterfazGasolineraExterna gasEx = (InterfazGasolineraExterna) Naming.lookup("//127.0.0.1/GasolineraExterna");
+                InterfazGasolineraExterna gasEx = (InterfazGasolineraExterna) Naming.lookup("//127.0.0.1/GasEx");
                 
                 gasolinera.actualizarVehiculos(gasEx.getVehiculos());
                 gasolinera.actualizarOperarios(gasEx.getOperarios());
